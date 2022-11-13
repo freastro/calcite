@@ -16,34 +16,46 @@
  */
 package org.apache.calcite.sql.dialect;
 
-import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * A <code>SqlDialect</code> implementation for the H2 database.
+ * Default sequence information implementation.
  */
-public class H2SqlDialect extends SqlDialect {
-  public static final Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.H2)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(PostgresqlSequenceSupport.INSTANCE);
+public class SequenceInformationImpl implements SqlDialect.SequenceInformation {
+  private final String catalog;
+  private final String schema;
+  private final String name;
+  private final SqlTypeName typeName;
 
-  public static final SqlDialect DEFAULT = new H2SqlDialect(DEFAULT_CONTEXT);
+  private final int increment;
 
-  /** Creates an H2SqlDialect. */
-  public H2SqlDialect(Context context) {
-    super(context);
+  public SequenceInformationImpl(String catalog, String schema, String name, SqlTypeName typeName,
+      int increment) {
+    this.catalog = catalog;
+    this.schema = schema;
+    this.name = name;
+    this.typeName = typeName;
+    this.increment = increment;
   }
 
-  @Override public boolean supportsCharSet() {
-    return false;
+  @Override public String getCatalog() {
+    return catalog;
   }
 
-  @Override public boolean supportsWindowFunctions() {
-    return false;
+  @Override public String getSchema() {
+    return schema;
   }
 
-  @Override public boolean supportsJoinType(JoinRelType joinType) {
-    return joinType != JoinRelType.FULL;
+  @Override public String getName() {
+    return name;
+  }
+
+  @Override public SqlTypeName getType() {
+    return typeName;
+  }
+
+  @Override public int getIncrement() {
+    return increment;
   }
 }

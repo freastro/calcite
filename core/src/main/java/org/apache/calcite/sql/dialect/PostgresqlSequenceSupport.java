@@ -17,27 +17,20 @@
 package org.apache.calcite.sql.dialect;
 
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlWriter;
 
 /**
- * A <code>SqlDialect</code> implementation that produces SQL that can be parsed
- * by Apache Calcite.
+ * Implementation for the Postgesql dialect.
  */
-public class CalciteSqlDialect extends SqlDialect {
-  public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.CALCITE)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
+public class PostgresqlSequenceSupport extends InformationSchemaSequenceSupport {
+  public static final SqlDialect.SequenceSupport INSTANCE = new PostgresqlSequenceSupport();
 
-  /**
-   * A dialect useful for generating SQL which can be parsed by the Apache
-   * Calcite parser, in particular quoting literals and identifiers. If you
-   * want a dialect that knows the full capabilities of the database, create
-   * one from a connection.
-   */
-  public static final SqlDialect DEFAULT = new CalciteSqlDialect(DEFAULT_CONTEXT);
-
-  /** Creates a CalciteSqlDialect. */
-  public CalciteSqlDialect(Context context) {
-    super(context);
+  @Override public void unparseSequenceVal(SqlWriter writer, SqlKind kind, SqlNode sequenceNode) {
+    writer.sep(kind == SqlKind.NEXT_VALUE
+        ? "NEXTVAL('" : "CURRVAL('");
+    sequenceNode.unparse(writer, 0, 0);
+    writer.sep("')");
   }
 }

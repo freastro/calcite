@@ -36,7 +36,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class HsqldbSqlDialect extends SqlDialect {
   public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.HSQLDB);
+      .withDatabaseProduct(SqlDialect.DatabaseProduct.HSQLDB)
+      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new HsqldbSqlDialect(DEFAULT_CONTEXT);
 

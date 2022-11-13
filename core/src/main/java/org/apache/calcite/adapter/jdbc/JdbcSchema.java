@@ -247,6 +247,48 @@ public class JdbcSchema implements Schema {
     return getFunctions().keySet();
   }
 
+  protected JdbcSequence createSequence(
+          String jdbcCatalogName,
+          String jdbcSchemaName,
+          String jdbcSequenceName,
+          SqlTypeName jdbcSequenceType,
+          int increment) {
+    return new JdbcSequence(
+            this,
+            jdbcCatalogName,
+            jdbcSchemaName,
+            jdbcSequenceName,
+            jdbcSequenceType,
+            increment);
+  }
+
+  protected ImmutableMap<String, JdbcSequence> computeSequences() {
+    Connection connection = null;
+    try {
+      connection = dataSource.getConnection();
+      Collection<SqlDialect.SequenceInformation> sequenceInformations =
+              dialect.getSequenceInformation(connection, catalog, schema);
+      final ImmutableMap.Builder<String, JdbcSequence> builder =
+              ImmutableMap.builder();
+      for (SqlDialect.SequenceInformation sequenceInformation : sequenceInformations) {
+        final JdbcSequence sequence =
+                new JdbcSequence(
+                        this,
+                        sequenceInformation.getCatalog(),
+                        sequenceInformation.getSchema(),
+                        sequenceInformation.getName(),
+                        sequenceInformation.getType(),
+                        sequenceInformation.getIncrement());
+        builder.put(sequenceInformation.getName(), sequence);
+      }
+      return builder.build();
+    } catch (SQLException e) {
+      throw new RuntimeException("Exception while reading sequences", e);
+    } finally {
+      close(connection, null, null);
+    }
+  }
+
   private ImmutableMap<String, JdbcTable> computeTables() {
     Connection connection = null;
     ResultSet resultSet = null;
@@ -255,6 +297,9 @@ public class JdbcSchema implements Schema {
       final Pair<@Nullable String, @Nullable String> catalogSchema = getCatalogSchema(connection);
       final String catalog = catalogSchema.left;
       final String schema = catalogSchema.right;
+      // Collect sequences before tables in a map so we can skip "sequence tables"
+      // that were already discovered by the sequence support of the dialect
+      final Map<String, JdbcSequence> sequences = computeSequences();
       final Iterable<MetaImpl.MetaTable> tableDefs;
       Foo threadMetadata = THREAD_METADATA.get();
       if (threadMetadata != null) {
@@ -277,6 +322,7 @@ public class JdbcSchema implements Schema {
 
       final ImmutableMap.Builder<String, JdbcTable> builder =
           ImmutableMap.builder();
+      builder.putAll(sequences);
       for (MetaImpl.MetaTable tableDef : tableDefs) {
         // Clean up table type. In particular, this ensures that 'SYSTEM TABLE',
         // returned by Phoenix among others, maps to TableType.SYSTEM_TABLE.
@@ -289,17 +335,30 @@ public class JdbcSchema implements Schema {
         // not filter them as we keep all the other table types.
         final String tableTypeName2 =
             tableDef.tableType == null
-            ? null
-            : tableDef.tableType.toUpperCase(Locale.ROOT).replace(' ', '_');
+                ? null
+                : tableDef.tableType.toUpperCase(Locale.ROOT).replace(' ', '_');
         final TableType tableType =
             Util.enumVal(TableType.OTHER, tableTypeName2);
-        if (tableType == TableType.OTHER  && tableTypeName2 != null) {
+        if (tableType == TableType.OTHER && tableTypeName2 != null) {
           LOGGER.info("Unknown table type: {}", tableTypeName2);
         }
-        final JdbcTable table =
-            new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem,
-                tableDef.tableName, tableType);
-        builder.put(tableDef.tableName, table);
+        // Only add "sequence tables" that we didn't discover before
+        if (tableType == TableType.SEQUENCE || tableType == TableType.TEMPORARY_SEQUENCE) {
+          if (!sequences.containsKey(tableDef.tableName)) {
+            final JdbcSequence sequence = createSequence(
+                    tableDef.tableCat,
+                    tableDef.tableSchem,
+                    tableDef.tableName,
+                    SqlTypeName.BIGINT,
+                    1);
+            builder.put(tableDef.tableName, sequence);
+          }
+        } else {
+          final JdbcTable table =
+                  new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem,
+                                tableDef.tableName, tableType);
+          builder.put(tableDef.tableName, table);
+        }
       }
       return builder.build();
     } catch (SQLException e) {

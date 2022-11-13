@@ -65,7 +65,8 @@ public class OracleSqlDialect extends SqlDialect {
   public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
       .withDatabaseProduct(SqlDialect.DatabaseProduct.ORACLE)
       .withIdentifierQuoteString("\"")
-      .withDataTypeSystem(ORACLE_TYPE_SYSTEM);
+      .withDataTypeSystem(ORACLE_TYPE_SYSTEM)
+      .withSequenceSupport(OracleSequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new OracleSqlDialect(DEFAULT_CONTEXT);
 

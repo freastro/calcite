@@ -39,6 +39,7 @@ import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.runtime.Feature;
 import org.apache.calcite.runtime.Resources;
 import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.schema.Sequence;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.ModifiableViewTable;
 import org.apache.calcite.sql.JoinConditionType;
@@ -3825,7 +3826,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   private void checkRollUp(@Nullable SqlNode grandParent, @Nullable SqlNode parent,
       @Nullable SqlNode current, SqlValidatorScope scope, @Nullable String contextClause) {
     current = stripAs(current);
-    if (current instanceof SqlCall && !(current instanceof SqlSelect)) {
+    if (current instanceof SqlCall && !(current instanceof SqlSelect)
+        && current.getKind() != SqlKind.NEXT_VALUE && current.getKind() != SqlKind.CURRENT_VALUE) {
       // Validate OVER separately
       checkRollUpInWindow(getWindowInOver(current), scope);
       current = stripOver(current);
@@ -4198,7 +4200,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  @Override public void validateSequenceValue(SqlValidatorScope scope, SqlIdentifier id) {
+  @Override public SqlTypeName validateSequenceValue(SqlValidatorScope scope, SqlIdentifier id) {
     // Resolve identifier as a table.
     final SqlValidatorScope.ResolvedImpl resolved =
         new SqlValidatorScope.ResolvedImpl();
@@ -4214,7 +4216,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       switch (table.getJdbcTableType()) {
       case SEQUENCE:
       case TEMPORARY_SEQUENCE:
-        return;
+        if (table instanceof Sequence) {
+          return ((Sequence) table).getSequenceType();
+        }
+        return SqlTypeName.BIGINT;
       default:
         break;
       }

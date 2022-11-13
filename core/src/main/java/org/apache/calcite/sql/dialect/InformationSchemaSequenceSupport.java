@@ -19,25 +19,17 @@ package org.apache.calcite.sql.dialect;
 import org.apache.calcite.sql.SqlDialect;
 
 /**
- * A <code>SqlDialect</code> implementation that produces SQL that can be parsed
- * by Apache Calcite.
+ * Implementation using the information schema sequences table.
  */
-public class CalciteSqlDialect extends SqlDialect {
-  public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.CALCITE)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
+public class InformationSchemaSequenceSupport extends SequenceSupportImpl {
+  public static final SqlDialect.SequenceSupport INSTANCE =
+      new InformationSchemaSequenceSupport();
 
-  /**
-   * A dialect useful for generating SQL which can be parsed by the Apache
-   * Calcite parser, in particular quoting literals and identifiers. If you
-   * want a dialect that knows the full capabilities of the database, create
-   * one from a connection.
-   */
-  public static final SqlDialect DEFAULT = new CalciteSqlDialect(DEFAULT_CONTEXT);
-
-  /** Creates a CalciteSqlDialect. */
-  public CalciteSqlDialect(Context context) {
-    super(context);
+  protected InformationSchemaSequenceSupport() {
+    super(
+        "select SEQUENCE_CATALOG, SEQUENCE_SCHEMA, SEQUENCE_NAME, DATA_TYPE, INCREMENT from "
+            + "information_schema.sequences where 1=1",
+        " and SEQUENCE_CATALOG = ?",
+        " and SEQUENCE_SCHEMA = ?");
   }
 }

@@ -952,7 +952,7 @@ public class RelToSqlConverter extends SqlImplementor
             fc.getFieldIndex() < aggregate.getGroupSet().cardinality());
   }
 
-  private static SqlIdentifier getSqlTargetTable(RelNode e) {
+  static SqlIdentifier getSqlTargetTable(RelNode e) {
     // Use the foreign catalog, schema and table names, if they exist,
     // rather than the qualified name of the shadow table in Calcite.
     final RelOptTable table = requireNonNull(e.getTable());

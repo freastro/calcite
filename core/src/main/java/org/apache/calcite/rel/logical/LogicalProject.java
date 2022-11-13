@@ -18,6 +18,7 @@ package org.apache.calcite.rel.logical;
 
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -31,7 +32,9 @@ import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSeqCall;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Util;
 
@@ -176,6 +179,15 @@ public final class LogicalProject extends Project {
     return shuttle.visit(this);
   }
 
+  @Override
+  public RelNode onRegister(RelOptPlanner planner) {
+    final RegisteringSeqCallVisitor seqCallVisitor = new RegisteringSeqCallVisitor(planner);
+    for (RexNode exp : exps) {
+      exp.accept(seqCallVisitor);
+    }
+    return super.onRegister(planner);
+  }
+
   @Override public RelNode withHints(List<RelHint> hintList) {
     return new LogicalProject(getCluster(), traitSet, hintList,
         input, getProjects(), getRowType(), variablesSet);
@@ -187,5 +199,20 @@ public final class LogicalProject extends Project {
 
   @Override public int deepHashCode() {
     return deepHashCode0();
+  }
+
+  private static class RegisteringSeqCallVisitor extends RexVisitorImpl<Void> {
+
+    private final RelOptPlanner planner;
+
+    private RegisteringSeqCallVisitor(RelOptPlanner planner) {
+      super(true);
+      this.planner = planner;
+    }
+
+    @Override public Void visitSeqCall(RexSeqCall seqCall) {
+      planner.ensureRegistered(seqCall.rel, null);
+      return super.visitSeqCall(seqCall);
+    }
   }
 }

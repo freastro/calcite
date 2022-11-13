@@ -735,6 +735,11 @@ public class RexUtil {
           && RexVisitorImpl.visitArrayAnd(this, call.getOperands());
     }
 
+    @Override public Boolean visitSeqCall(RexSeqCall seqCall) {
+      // A sequence call is never constant as it's not deterministic
+      return false;
+    }
+
     @Override public Boolean visitRangeRef(RexRangeRef rangeRef) {
       return false;
     }
@@ -770,6 +775,10 @@ public class RexUtil {
                 throw Util.FoundOne.NULL;
               }
               return super.visitCall(call);
+            }
+            @Override public Void visitSeqCall(RexSeqCall seqCall) {
+              // A sequence is always non-deterministic
+              throw Util.FoundOne.NULL;
             }
           };
       e.accept(visitor);

@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.sql.dialect;
+package org.apache.calcite.schema;
 
-import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.type.SqlTypeName;
 
 /**
- * A <code>SqlDialect</code> implementation for the Apache Phoenix database.
+ * Sequence.
  */
-public class PhoenixSqlDialect extends SqlDialect {
-  public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.PHOENIX)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(PhoenixSequenceSupport.INSTANCE);
+public interface Sequence {
 
-  public static final SqlDialect DEFAULT = new PhoenixSqlDialect(DEFAULT_CONTEXT);
+  /**
+   * Type of the generated sequence value
+   */
+  SqlTypeName getSequenceType();
 
-  /** Creates a PhoenixSqlDialect. */
-  public PhoenixSqlDialect(Context context) {
-    super(context);
-  }
-
-  @Override public boolean supportsCharSet() {
-    return false;
-  }
+  /**
+   * The value by which a sequence is incremented
+   */
+  int getIncrement();
 }

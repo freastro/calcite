@@ -62,7 +62,8 @@ public class RedshiftSqlDialect extends SqlDialect {
       .withQuotedCasing(Casing.TO_LOWER)
       .withUnquotedCasing(Casing.TO_LOWER)
       .withCaseSensitive(false)
-      .withDataTypeSystem(TYPE_SYSTEM);
+      .withDataTypeSystem(TYPE_SYSTEM)
+      .withSequenceSupport(PostgresqlSequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new RedshiftSqlDialect(DEFAULT_CONTEXT);
 

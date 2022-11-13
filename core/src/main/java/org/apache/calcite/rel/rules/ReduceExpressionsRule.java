@@ -50,6 +50,7 @@ import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
 import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.rex.RexSeqCall;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexSubQuery;
@@ -1082,6 +1083,11 @@ public abstract class ReduceExpressionsRule<C extends ReduceExpressionsRule.Conf
     @Override public Void visitCall(RexCall call) {
       // assume REDUCIBLE_CONSTANT until proven otherwise
       analyzeCall(call, Constancy.REDUCIBLE_CONSTANT);
+      return null;
+    }
+
+    @Override public Void visitSeqCall(RexSeqCall seqCall) {
+      stack.add(Constancy.IRREDUCIBLE_CONSTANT);
       return null;
     }
 

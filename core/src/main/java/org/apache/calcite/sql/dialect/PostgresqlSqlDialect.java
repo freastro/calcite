@@ -64,7 +64,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
       .withDatabaseProduct(SqlDialect.DatabaseProduct.POSTGRESQL)
       .withIdentifierQuoteString("\"")
       .withUnquotedCasing(Casing.TO_LOWER)
-      .withDataTypeSystem(POSTGRESQL_TYPE_SYSTEM);
+      .withDataTypeSystem(POSTGRESQL_TYPE_SYSTEM)
+      .withSequenceSupport(PostgresqlSequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new PostgresqlSqlDialect(DEFAULT_CONTEXT);
 

@@ -93,6 +93,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -6564,6 +6568,119 @@ class RelToSqlConverterTest {
     sql(sql)
         .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
         .withBigQuery().ok(expected);
+  }
+
+  @Test void testSequenceCurrentValue() {
+    final String sql = "SELECT CURRENT VALUE FOR REL2SQL";
+    final String expectedCalcite = "SELECT CURRENT VALUE FOR \"SCOTT\".\"REL2SQL\"\n" +
+        "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
+    final String expectedDb2 = "SELECT PREVIOUS VALUE FOR SCOTT.REL2SQL\n" +
+        "FROM (VALUES (0)) AS t (ZERO)";
+    final String expectedHsqldb = "SELECT CURRENT VALUE FOR SCOTT.REL2SQL\n" +
+        "FROM (VALUES (0)) AS t (ZERO)";
+    final String expectedOracle = "SELECT \"SCOTT\".\"REL2SQL\" .CURRVAL\n" +
+        "FROM \"DUAL\"";
+    final String expectedPostgresql = "SELECT CURRVAL(' \"SCOTT\".\"REL2SQL\" ')\n" +
+        "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
+    final String expectedRedshift = "SELECT CURRVAL(' \"SCOTT\".\"REL2SQL\" ')";
+
+    Connection connection = null;
+    Statement statement = null;
+    try {
+      // Create sequence in JDBC SCOTT database
+      connection = DriverManager.getConnection(CalciteAssert.DB.scott.url,
+          CalciteAssert.DB.scott.username, CalciteAssert.DB.scott.password);
+      statement = connection.createStatement();
+      statement.execute("CREATE SEQUENCE REL2SQL");
+
+      // Verify dialect conversions
+      sql(sql)
+          .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
+          .withCalcite().ok(expectedCalcite)
+          .withDb2().ok(expectedDb2)
+          .dialect(DatabaseProduct.H2.getDialect()).ok(expectedPostgresql)
+          .withHsqldb().ok(expectedHsqldb)
+          .withOracle().ok(expectedOracle)
+          .dialect(DatabaseProduct.PHOENIX.getDialect()).ok(expectedCalcite)
+          .withPostgresql().ok(expectedPostgresql)
+          .withRedshift().ok(expectedRedshift);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } finally {
+      if (statement != null) {
+        try {
+          statement.execute("DROP SEQUENCE REL2SQL");
+          statement.close();
+        } catch (SQLException e) {
+          // ignored
+        }
+      }
+      if (connection != null) {
+        try {
+          connection.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+  }
+
+  @Test void testSequenceNextValue() {
+    final String sql = "SELECT NEXT VALUE FOR REL2SQL";
+    final String expectedCalcite = "SELECT NEXT VALUE FOR \"SCOTT\".\"REL2SQL\"\n" +
+        "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
+    final String expectedDb2 = "SELECT NEXT VALUE FOR SCOTT.REL2SQL\n" +
+        "FROM (VALUES (0)) AS t (ZERO)";
+    final String expectedHsqldb = "SELECT NEXT VALUE FOR SCOTT.REL2SQL\n" +
+        "FROM (VALUES (0)) AS t (ZERO)";
+    final String expectedMssql = "SELECT NEXT VALUE FOR [SCOTT].[REL2SQL]\n" +
+        "FROM (VALUES (0)) AS [t] ([ZERO])";
+    final String expectedOracle = "SELECT \"SCOTT\".\"REL2SQL\" .NEXTVAL\n" +
+        "FROM \"DUAL\"";
+    final String expectedPostgresql = "SELECT NEXTVAL(' \"SCOTT\".\"REL2SQL\" ')\n" +
+        "FROM (VALUES (0)) AS \"t\" (\"ZERO\")";
+    final String expectedRedshift = "SELECT NEXTVAL(' \"SCOTT\".\"REL2SQL\" ')";
+
+    Connection connection = null;
+    Statement statement = null;
+    try {
+      // Create sequence in JDBC SCOTT database
+      connection = DriverManager.getConnection(CalciteAssert.DB.scott.url,
+          CalciteAssert.DB.scott.username, CalciteAssert.DB.scott.password);
+      statement = connection.createStatement();
+      statement.execute("CREATE SEQUENCE REL2SQL");
+
+      // Verify dialect conversions
+      sql(sql)
+          .schema(CalciteAssert.SchemaSpec.JDBC_SCOTT)
+          .withCalcite().ok(expectedCalcite)
+          .withDb2().ok(expectedDb2)
+          .dialect(DatabaseProduct.H2.getDialect()).ok(expectedPostgresql)
+          .withHsqldb().ok(expectedHsqldb)
+          .withMssql().ok(expectedMssql)
+          .withOracle().ok(expectedOracle)
+          .dialect(DatabaseProduct.PHOENIX.getDialect()).ok(expectedCalcite)
+          .withPostgresql().ok(expectedPostgresql)
+          .withRedshift().ok(expectedRedshift);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } finally {
+      if (statement != null) {
+        try {
+          statement.execute("DROP SEQUENCE REL2SQL");
+          statement.close();
+        } catch (SQLException e) {
+          // ignored
+        }
+      }
+      if (connection != null) {
+        try {
+          connection.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
   }
 
   /** Fluid interface to run tests. */

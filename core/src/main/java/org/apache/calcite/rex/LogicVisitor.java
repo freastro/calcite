@@ -124,6 +124,10 @@ public class LogicVisitor extends RexUnaryBiVisitor<@Nullable Logic> {
     return end(call, arg0);
   }
 
+  @Override public @Nullable Logic visitSeqCall(RexSeqCall seqCall, Logic arg) {
+    return end(seqCall, arg);
+  }
+
   @Override protected @Nullable Logic end(RexNode node, @Nullable Logic arg) {
     if (node.equals(seek)) {
       logicCollection.add(requireNonNull(arg, "arg"));

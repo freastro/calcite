@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexPatternFieldRef;
 import org.apache.calcite.rex.RexProgram;
+import org.apache.calcite.rex.RexSeqCall;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUnknownAs;
@@ -819,6 +820,14 @@ public abstract class SqlImplementor {
         } else {
           nodeList.add(castNonNull(dialect.getCastSpec(call.getType())));
         }
+        break;
+      case NEXT_VALUE:
+      case CURRENT_VALUE:
+        // Use the foreign catalog, schema and table names, if they exist,
+        // rather than the qualified name of the shadow table in Calcite.
+        final RexSeqCall seqCall = (RexSeqCall) call;
+        nodeList.clear();
+        nodeList.add(RelToSqlConverter.getSqlTargetTable(seqCall.rel));
         break;
       default:
         break;

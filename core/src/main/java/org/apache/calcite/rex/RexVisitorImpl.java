@@ -82,6 +82,10 @@ public class RexVisitorImpl<@Nullable R> implements RexVisitor<R> {
     return r;
   }
 
+  @Override public R visitSeqCall(RexSeqCall seqCall) {
+    return null;
+  }
+
   @Override public R visitDynamicParam(RexDynamicParam dynamicParam) {
     return null;
   }

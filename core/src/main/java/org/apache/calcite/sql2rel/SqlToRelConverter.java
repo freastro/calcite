@@ -87,6 +87,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexPatternFieldRef;
 import org.apache.calcite.rex.RexRangeRef;
+import org.apache.calcite.rex.RexSeqCall;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexUtil;
@@ -5349,6 +5350,10 @@ public class SqlToRelConverter {
         }
         return fieldAccess;
 
+      case NEXT_VALUE:
+      case CURRENT_VALUE:
+        return convertSequenceExpression((SqlCall) expr);
+
       case OVER:
         return convertOver(this, expr);
 
@@ -5359,6 +5364,62 @@ public class SqlToRelConverter {
       // Apply standard conversions.
       rex = expr.accept(this);
       return requireNonNull(rex, "rex");
+    }
+
+    private RexNode convertSequenceExpression(SqlCall call) {
+      // Validate operator
+      final RelDataType returnType = validator.getValidatedNodeType(call);
+
+      final SqlOperator op;
+      switch (call.getKind()) {
+      case NEXT_VALUE:
+        op = SqlStdOperatorTable.NEXT_VALUE;
+        break;
+      case CURRENT_VALUE:
+        op = SqlStdOperatorTable.CURRENT_VALUE;
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported sequence kind: " + call.getKind());
+      }
+
+      // Validate operand
+      final SqlNode operand = Iterables.getOnlyElement(call.getOperandList());
+      final List<String> names;
+      switch (operand.getKind()) {
+      case IDENTIFIER:
+        final SqlIdentifier id = (SqlIdentifier) operand;
+        names = id.names;
+        break;
+      case LITERAL:
+        final SqlLiteral literal = (SqlLiteral) operand;
+        names = Util.stringToList(literal.toValue());
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported sequence argument: " + operand.getKind());
+      }
+
+      // Resolve sequence as table
+      final SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
+      scope.resolveTable(names, catalogReader.nameMatcher(), SqlValidatorScope.Path.EMPTY,
+          resolved);
+      assert resolved.count() == 1;
+
+      final SqlValidatorNamespace fromNamespace = resolved.only().namespace;
+      final String datasetName = datasetStack.isEmpty() ? null : datasetStack.peek();
+      final boolean[] usedDataset = {false};
+      final RelOptTable table = SqlValidatorUtil.getRelOptTable(fromNamespace, catalogReader,
+              datasetName, usedDataset);
+      assert table != null;
+      final RelNode rel = toRel(table, ImmutableList.of());
+
+      // Convert to Rex
+      final String key = Util.listToString(names);
+      return new RexSeqCall(
+          returnType,
+          op,
+          ImmutableList.of(rexBuilder.makeLiteral(key)),
+          rel
+      );
     }
 
     /**

@@ -49,7 +49,8 @@ public class MssqlSqlDialect extends SqlDialect {
       .withDatabaseProduct(SqlDialect.DatabaseProduct.MSSQL)
       .withIdentifierQuoteString("[")
       .withCaseSensitive(false)
-      .withNullCollation(NullCollation.LOW);
+      .withNullCollation(NullCollation.LOW)
+      .withSequenceSupport(MssqlSequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new MssqlSqlDialect(DEFAULT_CONTEXT);
 

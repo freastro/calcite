@@ -27,7 +27,8 @@ public class AnsiSqlDialect extends SqlDialect {
 
   public static final Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
       .withDatabaseProduct(SqlDialect.DatabaseProduct.UNKNOWN)
-      .withIdentifierQuoteString("`");
+      .withIdentifierQuoteString("`")
+      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
 
   /**
    * A dialect useful for generating generic SQL. If you need to do something

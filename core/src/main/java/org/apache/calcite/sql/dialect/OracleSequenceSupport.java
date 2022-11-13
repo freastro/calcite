@@ -17,27 +17,28 @@
 package org.apache.calcite.sql.dialect;
 
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlWriter;
 
 /**
- * A <code>SqlDialect</code> implementation that produces SQL that can be parsed
- * by Apache Calcite.
+ * Implementation using the Oracle all_objects view.
  */
-public class CalciteSqlDialect extends SqlDialect {
-  public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.CALCITE)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
+public class OracleSequenceSupport extends SequenceSupportImpl {
+  public static final SqlDialect.SequenceSupport INSTANCE = new OracleSequenceSupport();
 
-  /**
-   * A dialect useful for generating SQL which can be parsed by the Apache
-   * Calcite parser, in particular quoting literals and identifiers. If you
-   * want a dialect that knows the full capabilities of the database, create
-   * one from a connection.
-   */
-  public static final SqlDialect DEFAULT = new CalciteSqlDialect(DEFAULT_CONTEXT);
+  private OracleSequenceSupport() {
+    super(
+        "select NULL, o.sequence_owner, o.sequence_name, 'DECIMAL', o.increment_by "
+            + "from all_sequences o where 1=1",
+        null,
+        " and o.sequence_owner = ?");
+  }
 
-  /** Creates a CalciteSqlDialect. */
-  public CalciteSqlDialect(Context context) {
-    super(context);
+  @Override public void unparseSequenceVal(SqlWriter writer, SqlKind kind, SqlNode sequenceNode) {
+    // Pseudocolumns: https://docs.oracle.com/cd/B19306_01/server.102/b14200/pseudocolumns002.htm
+    sequenceNode.unparse(writer, 0, 0);
+    writer.sep(kind == SqlKind.NEXT_VALUE
+        ? ".NEXTVAL" : ".CURRVAL");
   }
 }

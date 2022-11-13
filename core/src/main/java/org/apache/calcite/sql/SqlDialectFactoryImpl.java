@@ -21,6 +21,7 @@ import org.apache.calcite.sql.dialect.AnsiSqlDialect;
 import org.apache.calcite.sql.dialect.BigQuerySqlDialect;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.dialect.ClickHouseSqlDialect;
+import org.apache.calcite.sql.dialect.Db2SequenceSupport;
 import org.apache.calcite.sql.dialect.Db2SqlDialect;
 import org.apache.calcite.sql.dialect.DerbySqlDialect;
 import org.apache.calcite.sql.dialect.ExasolSqlDialect;
@@ -30,18 +31,23 @@ import org.apache.calcite.sql.dialect.H2SqlDialect;
 import org.apache.calcite.sql.dialect.HiveSqlDialect;
 import org.apache.calcite.sql.dialect.HsqldbSqlDialect;
 import org.apache.calcite.sql.dialect.InfobrightSqlDialect;
+import org.apache.calcite.sql.dialect.InformationSchemaSequenceSupport;
 import org.apache.calcite.sql.dialect.InformixSqlDialect;
 import org.apache.calcite.sql.dialect.IngresSqlDialect;
 import org.apache.calcite.sql.dialect.InterbaseSqlDialect;
 import org.apache.calcite.sql.dialect.JethroDataSqlDialect;
 import org.apache.calcite.sql.dialect.LucidDbSqlDialect;
+import org.apache.calcite.sql.dialect.MssqlSequenceSupport;
 import org.apache.calcite.sql.dialect.MssqlSqlDialect;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.dialect.NeoviewSqlDialect;
 import org.apache.calcite.sql.dialect.NetezzaSqlDialect;
+import org.apache.calcite.sql.dialect.OracleSequenceSupport;
 import org.apache.calcite.sql.dialect.OracleSqlDialect;
 import org.apache.calcite.sql.dialect.ParaccelSqlDialect;
+import org.apache.calcite.sql.dialect.PhoenixSequenceSupport;
 import org.apache.calcite.sql.dialect.PhoenixSqlDialect;
+import org.apache.calcite.sql.dialect.PostgresqlSequenceSupport;
 import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.dialect.PrestoSqlDialect;
 import org.apache.calcite.sql.dialect.RedshiftSqlDialect;
@@ -104,9 +110,11 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
     case "LUCIDDB":
       return new LucidDbSqlDialect(c);
     case "ORACLE":
-      return new OracleSqlDialect(c);
+      return new OracleSqlDialect(
+          c.withSequenceSupport(OracleSequenceSupport.INSTANCE));
     case "PHOENIX":
-      return new PhoenixSqlDialect(c);
+      return new PhoenixSqlDialect(
+          c.withSequenceSupport(PhoenixSequenceSupport.INSTANCE));
     case "PRESTO":
     case "AWS.ATHENA":
       return new PrestoSqlDialect(c);
@@ -117,7 +125,8 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
           c.withDataTypeSystem(MysqlSqlDialect.MYSQL_TYPE_SYSTEM));
     case "REDSHIFT":
       return new RedshiftSqlDialect(
-          c.withDataTypeSystem(RedshiftSqlDialect.TYPE_SYSTEM));
+          c.withDataTypeSystem(RedshiftSqlDialect.TYPE_SYSTEM)
+              .withSequenceSupport(PostgresqlSequenceSupport.INSTANCE));
     case "SNOWFLAKE":
       return new SnowflakeSqlDialect(c);
     case "SPARK":
@@ -127,7 +136,8 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
     }
     // Now the fuzzy matches.
     if (upperProductName.startsWith("DB2")) {
-      return new Db2SqlDialect(c);
+      return new Db2SqlDialect(
+          c.withSequenceSupport(Db2SequenceSupport.INSTANCE));
     } else if (upperProductName.contains("FIREBIRD")) {
       return new FirebirdSqlDialect(c);
     } else if (upperProductName.contains("FIREBOLT")) {
@@ -145,17 +155,24 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
       return new NeoviewSqlDialect(c);
     } else if (upperProductName.contains("POSTGRE")) {
       return new PostgresqlSqlDialect(
-          c.withDataTypeSystem(PostgresqlSqlDialect.POSTGRESQL_TYPE_SYSTEM));
+          c.withDataTypeSystem(PostgresqlSqlDialect.POSTGRESQL_TYPE_SYSTEM)
+              .withSequenceSupport(PostgresqlSequenceSupport.INSTANCE));
     } else if (upperProductName.contains("SQL SERVER")) {
-      return new MssqlSqlDialect(c);
+      return new MssqlSqlDialect(
+          c.withSequenceSupport(
+              (c.databaseMajorVersion() >= 11)
+                  ? MssqlSequenceSupport.INSTANCE
+                  : null));
     } else if (upperProductName.contains("SYBASE")) {
       return new SybaseSqlDialect(c);
     } else if (upperProductName.contains("TERADATA")) {
       return new TeradataSqlDialect(c);
     } else if (upperProductName.contains("HSQL")) {
-      return new HsqldbSqlDialect(c);
+      return new HsqldbSqlDialect(
+          c.withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE));
     } else if (upperProductName.contains("H2")) {
-      return new H2SqlDialect(c);
+      return new H2SqlDialect(
+          c.withSequenceSupport(PostgresqlSequenceSupport.INSTANCE));
     } else if (upperProductName.contains("VERTICA")) {
       return new VerticaSqlDialect(c);
     } else if (upperProductName.contains("SNOWFLAKE")) {
@@ -163,7 +180,8 @@ public class SqlDialectFactoryImpl implements SqlDialectFactory {
     } else if (upperProductName.contains("SPARK")) {
       return new SparkSqlDialect(c);
     } else {
-      return new AnsiSqlDialect(c);
+      return new AnsiSqlDialect(
+          c.withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE));
     }
   }
 

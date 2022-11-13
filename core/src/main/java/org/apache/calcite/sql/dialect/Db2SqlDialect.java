@@ -27,7 +27,8 @@ import org.apache.calcite.sql.SqlWriter;
  */
 public class Db2SqlDialect extends SqlDialect {
   public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.DB2);
+      .withDatabaseProduct(SqlDialect.DatabaseProduct.DB2)
+      .withSequenceSupport(Db2SequenceSupport.INSTANCE);
 
   public static final SqlDialect DEFAULT = new Db2SqlDialect(DEFAULT_CONTEXT);
 

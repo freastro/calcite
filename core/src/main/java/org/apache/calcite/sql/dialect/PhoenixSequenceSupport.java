@@ -19,25 +19,17 @@ package org.apache.calcite.sql.dialect;
 import org.apache.calcite.sql.SqlDialect;
 
 /**
- * A <code>SqlDialect</code> implementation that produces SQL that can be parsed
- * by Apache Calcite.
+ * Implementation for the Phoenix dialect.
  */
-public class CalciteSqlDialect extends SqlDialect {
-  public static final SqlDialect.Context DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-      .withDatabaseProduct(SqlDialect.DatabaseProduct.CALCITE)
-      .withIdentifierQuoteString("\"")
-      .withSequenceSupport(InformationSchemaSequenceSupport.INSTANCE);
+public class PhoenixSequenceSupport extends SequenceSupportImpl
+    implements SqlDialect.SequenceSupport {
+  public static final SqlDialect.SequenceSupport INSTANCE = new PhoenixSequenceSupport();
 
-  /**
-   * A dialect useful for generating SQL which can be parsed by the Apache
-   * Calcite parser, in particular quoting literals and identifiers. If you
-   * want a dialect that knows the full capabilities of the database, create
-   * one from a connection.
-   */
-  public static final SqlDialect DEFAULT = new CalciteSqlDialect(DEFAULT_CONTEXT);
-
-  /** Creates a CalciteSqlDialect. */
-  public CalciteSqlDialect(Context context) {
-    super(context);
+  protected PhoenixSequenceSupport() {
+    super(
+        "select NULL, sequence_schema, sequence_name, 'BIGINT', increment_by from "
+            + "information_schema.sequences where 1=1",
+        null,
+        " and sequence_schema = ?");
   }
 }

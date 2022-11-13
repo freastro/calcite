@@ -22,6 +22,14 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.logical.LogicalProject;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexChecker;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSeqCall;
+import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.util.Litmus;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Rule to convert a {@link LogicalProject} to an {@link EnumerableProject}.
@@ -34,6 +42,7 @@ class EnumerableProjectRule extends ConverterRule {
   static final Config DEFAULT_CONFIG = Config.INSTANCE
       .as(Config.class)
       .withConversion(LogicalProject.class, p -> !p.containsOver(),
+//                            && !seqCallInProject(p),
           Convention.NONE, EnumerableConvention.INSTANCE,
           "EnumerableProjectRule")
       .withRuleFactory(EnumerableProjectRule::new);
@@ -56,5 +65,38 @@ class EnumerableProjectRule extends ConverterRule {
                 .replace(EnumerableConvention.INSTANCE)),
         project.getProjects(),
         project.getRowType());
+  }
+
+  protected static boolean seqCallInProject(Project project) {
+    CheckingSeqCallVisitor visitor = new CheckingSeqCallVisitor();
+    for (RexNode node : project.getProjects()) {
+      node.accept(visitor);
+      if (visitor.containsSeqCall()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Visitor that checks whether part of a projection is a sequence call.
+   */
+  private static class CheckingSeqCallVisitor extends RexVisitorImpl<Void> {
+
+    private boolean containsSeqCall = false;
+
+    private CheckingSeqCallVisitor() {
+      super(true);
+    }
+
+    public boolean containsSeqCall() {
+      return containsSeqCall;
+    }
+
+    @Override
+    public Void visitSeqCall(RexSeqCall seqCall) {
+      containsSeqCall = true;
+      return super.visitSeqCall(seqCall);
+    }
   }
 }

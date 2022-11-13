@@ -41,6 +41,10 @@ public interface RexVisitor<R> {
 
   R visitCall(RexCall call);
 
+  default R visitSeqCall(RexSeqCall seqCall) {
+    return visitCall(seqCall);
+  }
+
   R visitOver(RexOver over);
 
   R visitCorrelVariable(RexCorrelVariable correlVariable);
